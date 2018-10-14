@@ -122,7 +122,8 @@ type fundamental struct {
 	*stack
 }
 
-func (f *fundamental) Error() string { return f.msg }
+func (f *fundamental) Error() string   { return f.msg }
+func (f *fundamental) Message() string { return f.msg }
 
 func (f *fundamental) Format(s fmt.State, verb rune) {
 	switch verb {
@@ -229,7 +230,7 @@ func WithMessagef(err error, format string, args ...interface{}) error {
 	}
 	return &withMessage{
 		cause: err,
-		msg: fmt.Sprintf(format, args...),
+		msg:   fmt.Sprintf(format, args...),
 	}
 }
 
@@ -238,8 +239,9 @@ type withMessage struct {
 	msg   string
 }
 
-func (w *withMessage) Error() string { return w.msg + ": " + w.cause.Error() }
-func (w *withMessage) Cause() error  { return w.cause }
+func (w *withMessage) Error() string   { return w.msg + ": " + w.cause.Error() }
+func (w *withMessage) Cause() error    { return w.cause }
+func (w *withMessage) Message() string { return w.msg }
 
 func (w *withMessage) Format(s fmt.State, verb rune) {
 	switch verb {
@@ -279,4 +281,17 @@ func Cause(err error) error {
 		err = cause.Cause()
 	}
 	return err
+}
+
+// Message returns the topmost message
+func Message(err error) (s string) {
+	type messager interface {
+		Message() string
+	}
+
+	if message, ok := err.(messager); ok {
+		return message.Message()
+	}
+
+	return s
 }
